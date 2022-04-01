@@ -1,13 +1,18 @@
-use std::net::SocketAddr;
 use std::net::TcpListener;
-use std::sync::BarrierWaitResult;
 
-use actix_web::web::{Buf, Data};
+use once_cell::sync::Lazy;
 use reqwest::Client;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::telemetry::{get_subscriber, init_subscriber};
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let subscriber = get_subscriber("test".into(), "debug".into(), std::io::stdout);
+    init_subscriber(subscriber);
+});
 
 struct TestApp {
     pub address: String,
@@ -15,6 +20,7 @@ struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    Lazy::force(&TRACING);
     let listener = TcpListener::bind("localhost:0").expect("Failed to bind random port");
     let address = listener.local_addr().unwrap();
 
@@ -32,7 +38,7 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut conn = PgConnection::connect(&config.connection_string_witout_dbname())
+    let mut conn = PgConnection::connect(&config.connection_string_witout_dbname().expose_secret())
         .await
         .expect("Failed to connect db.");
 
@@ -40,13 +46,8 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to create database.");
 
-    // sqlx::query!(r#"CREATE DATABASE "$1";"#, config.database_name)
-    //     .execute(&conn)
-    //     .await
-    //     .expect("Failed to create database.");
-
     // Migrate database
-    let db_pool = PgPool::connect(&config.connection_string())
+    let db_pool = PgPool::connect(&config.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres.");
 
@@ -69,7 +70,6 @@ async fn health_check_works() {
         .expect("Failed to execute request.");
 
     assert!(response.status().is_success());
-    //    assert_eq!(Some(0), response.content_length());
 }
 
 #[tokio::test]
