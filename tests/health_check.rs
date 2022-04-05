@@ -2,7 +2,6 @@ use std::net::TcpListener;
 
 use once_cell::sync::Lazy;
 use reqwest::Client;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -38,7 +37,7 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut conn = PgConnection::connect(&config.connection_string_witout_dbname().expose_secret())
+    let mut conn = PgConnection::connect_with(&config.without_db())
         .await
         .expect("Failed to connect db.");
 
@@ -47,7 +46,7 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to create database.");
 
     // Migrate database
-    let db_pool = PgPool::connect(&config.connection_string().expose_secret())
+    let db_pool = PgPool::connect_with(config.with_db())
         .await
         .expect("Failed to connect to Postgres.");
 
@@ -120,6 +119,34 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
             response.status().as_u16(),
             "The API did not fail with 400 Bad Request when the payload was {}",
             error_message
+        );
+    }
+}
+
+#[tokio::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+    let test_cases = vec![
+        ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
+        ("name=Ursula&email=", "empty email"),
+        ("name=Ursula&email=definitely-not-an-email", "invalid email"),
+    ];
+
+    for (body, description) in test_cases {
+        let response = client
+            .post(&format!("{}/subscriptions", &app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute requeset.");
+
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not return a 200 OK whe the payload was {}",
+            description
         );
     }
 }
