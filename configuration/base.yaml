@@ -6,3 +6,8 @@ database:
   username: "postgres"
   password: "password"
   database_name: "newsletter"
+email_client:
+  base_url: "https://api.sendgrid.com/v3/mail/send"
+  sender_email: "saml_test@alt9.co.kr"
+  api_key: ""
+  timeout_milliseconds: 100000
