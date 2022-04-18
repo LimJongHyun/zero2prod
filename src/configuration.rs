@@ -29,11 +29,13 @@ pub struct ApplicationSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
+    pub base_url: String,
 }
 
 #[derive(serde::Deserialize, Clone)]
 pub struct EmailClientSettings {
     pub base_url: String,
+    pub send_path: String,
     pub sender_email: String,
     pub api_key: Secret<String>,
     pub timeout_milliseconds: u64,

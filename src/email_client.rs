@@ -6,6 +6,7 @@ use crate::domain::SubscriberEmail;
 pub struct EmailClient {
     http_client: Client,
     base_url: String,
+    send_path: String,
     sender: SubscriberEmail,
     api_key: Secret<String>,
 }
@@ -13,6 +14,7 @@ pub struct EmailClient {
 impl EmailClient {
     pub fn new(
         base_url: String,
+        send_path: String,
         sender: SubscriberEmail,
         api_key: Secret<String>,
         timeout: std::time::Duration,
@@ -21,6 +23,7 @@ impl EmailClient {
         Self {
             http_client,
             base_url: base_url.clone(),
+            send_path: send_path.clone(),
             sender: sender.clone(),
             api_key: api_key.clone(),
         }
@@ -48,7 +51,7 @@ impl EmailClient {
         };
         let _builder = self
             .http_client
-            .post(&self.base_url)
+            .post(format!("{}{}", &self.base_url, &self.send_path))
             .header(
                 "Authorization",
                 format!("bearer {}", self.api_key.expose_secret()),
@@ -134,6 +137,7 @@ mod tests {
     fn email_client(base_url: String) -> EmailClient {
         EmailClient::new(
             base_url,
+            "".into(),
             email(),
             Secret::new(Faker.fake()),
             std::time::Duration::from_secs(10),
