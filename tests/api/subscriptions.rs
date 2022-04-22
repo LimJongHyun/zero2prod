@@ -129,3 +129,20 @@ async fn confirmations_without_token_are_rejected_with_a_400() {
 
     assert_eq!(r.status().as_u16(), 400);
 }
+
+#[tokio::test]
+async fn subscribe_fails_if_there_is_a_fatal_database_error() {
+    let app = spawn_app().await;
+    let body =
+        serde_urlencoded::to_string([("name", "le guin"), ("email", "ursula_le_guin@gmail.com")])
+            .expect("URL Encode error");
+
+    sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN subscription_token;",)
+        .execute(&app.db_pool)
+        .await
+        .unwrap();
+
+    let r = app.post_subscriptions(body.into()).await;
+
+    assert_eq!(r.status().as_u16(), 500);
+}
