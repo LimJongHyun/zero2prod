@@ -30,9 +30,9 @@ impl EmailClient {
     }
     pub async fn send_email(
         &self,
-        recipient: SubscriberEmail,
-        subject: String,
-        content: String,
+        recipient: &SubscriberEmail,
+        subject: &str,
+        content: &str,
     ) -> Result<(), reqwest::Error> {
         let request_body = SendEmailRequest {
             from: Address {
@@ -43,10 +43,10 @@ impl EmailClient {
                 email: recipient.as_ref().to_owned(),
                 name: "".to_owned(),
             }])],
-            subject,
+            subject: subject.to_owned(),
             content: vec![Content {
                 content_type: "text/html".to_owned(),
-                value: content,
+                value: content.to_owned(),
             }],
         };
         let _builder = self
@@ -158,7 +158,7 @@ mod tests {
             .await;
 
         let r = email_client(mock_server.uri())
-            .send_email(email(), subject(), content())
+            .send_email(&email(), &subject(), &content())
             .await;
 
         assert_ok!(r);
@@ -175,7 +175,7 @@ mod tests {
             .await;
 
         let r = email_client(mock_server.uri())
-            .send_email(email(), subject(), content())
+            .send_email(&email(), &subject(), &content())
             .await;
 
         assert_err!(r);
@@ -191,7 +191,7 @@ mod tests {
             .await;
 
         let r = email_client(mock_server.uri())
-            .send_email(email(), subject(), content())
+            .send_email(&email(), &subject(), &content())
             .await;
 
         assert_err!(r);

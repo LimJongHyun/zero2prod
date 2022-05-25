@@ -20,7 +20,7 @@ DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_NAME:=newsletter}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 
-if  [ -n "${SKIP_DOCKER}" ] || docker run -d -rm \
+if  [ -n "${SKIP_DOCKER}" ] || docker run -d --rm \
     --name postgres \
     -e POSTGRES_USER=${DB_USER} \
     -e POSTGRES_PASSWORD=${DB_PASSWORD} \

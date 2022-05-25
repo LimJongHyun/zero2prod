@@ -3,6 +3,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use routes::error_chain_fmt;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::error::Error;
 use std::fmt::Formatter;
@@ -10,6 +11,7 @@ use uuid::Uuid;
 
 use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 use crate::email_client::EmailClient;
+use crate::routes;
 use crate::startup::ApplicationBaseUrl;
 
 #[derive(serde::Deserialize)]
@@ -51,18 +53,6 @@ impl std::fmt::Display for StoreTokenError {
     }
 }
 
-fn error_chain_fmt(
-    e: &impl std::error::Error,
-    f: &mut std::fmt::Formatter<'_>,
-) -> std::fmt::Result {
-    writeln!(f, "{}\n", e)?;
-    let mut current = e.source();
-    while let Some(cause) = current {
-        writeln!(f, "Caused by:\n\t{}", cause)?;
-        current = cause.source();
-    }
-    Ok(())
-}
 #[derive(thiserror::Error)]
 pub enum SubscribeError {
     #[error("{0}")]
@@ -176,9 +166,9 @@ pub async fn send_confirmation_email(
 
     email_client
         .send_email(
-            new_subscriber.email,
-            "Welcome!".into(),
-            format!(
+            &new_subscriber.email,
+            "Welcome!",
+            &format!(
                 "Welcome to our newsletter!<br />\
                 Click <a href=\"{}\">here</a> to confirm your subscription.",
                 confirmation_link
