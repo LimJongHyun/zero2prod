@@ -1,5 +1,6 @@
 application:
   port: 8000
+  hmac_secret: "very-long-and-secret-random-key-needed-to-verify-message-integrity"
 database:
   port: 5432
   username: "postgres"
